@@ -15,6 +15,13 @@ from functions import show_proba
 from functions import import_columns
 from functions import client_overview
 from functions import show_explanations
+from functions import test_affichage
+
+################ initialisation affichage ##############
+if 'afficher' not in st.session_state:
+    st.session_state.afficher = True
+
+################################################
 
 #######################
 # Page configuration
@@ -35,15 +42,17 @@ col_selection = [c for c in df.columns if c not in ['TARGET', 'credit accordé =
 test_df= df[col_selection]
 list_IDS = df["SK_ID_CURR"].unique().tolist()
 ###########################################
-
-
-#alt.themes.enable("dark")
-#######################
-# Sidebar
-# Initialisation de la variable d'état si elle n'existe pas
+#######initialisation des états ############
 if 'validate_clicked' not in st.session_state:
     st.session_state['validate_clicked'] = False
+if 'credit_overview_clicked' not in st.session_state:
+    st.session_state["credit_overview_clicked"] = False
 
+if 'show_exp_clicked' not in st.session_state:
+    st.session_state["show_exp_clicked"]= False
+
+####################################################
+    
 # Création du sidebar
 with st.sidebar:
     st.title('Client Overview')    
@@ -52,13 +61,64 @@ with st.sidebar:
     validate_button = st.button("Validate Selection")
     if validate_button:
         st.session_state['validate_clicked'] = True
-col1, col2, col3 = st.columns((1.5, 4.5, 2), gap='medium')
-# Logique conditionnelle basée sur le bouton de validation
-if 'validate_clicked' in st.session_state and st.session_state['validate_clicked']:
+        st.session_state.afficher = not st.session_state.afficher
+    ### création de l'état True pour le bouton cliqué
+        
+####Création de la mise en page ##########
+col1, col2 = st.columns((3,4), gap='medium')
+###########################################
+
+
+    
+st.write(st.session_state)
+
+if 'validate_clicked' in st.session_state and st.session_state["validate_clicked"]:
+    #if 'show_exp_clicked' in st.session_state and st.session_state["show_exp_clicked"]:
+    #    st.session_state["credit_overview_clicked"] = True
+    #else:
+    #    st.session_state["credit_overview_clicked"] = False #initialisation de la feuille
+    
     with col1:
-        show_proba(df, list_IDS, selected_ID) 
-    # Création conditionnelle du bouton d'explications basé sur l'état de session
-        show_explanations_button = st.button("Voir les explications")
-    if show_explanations_button:
-        with col2:
-            show_explanations(selected_ID)
+        client_overview(df, selected_ID)
+        scol1,scol2,scol3 = st.columns((1,2,1))
+    #affichage du bouton qui permet d'afficher l'état du crédit
+        with scol1:
+            st.write("")
+        with scol2: 
+            credit_overview_bouton= st.button("Simulate Credit Overview")
+        with scol3:
+            st.write("")
+        del scol1,scol2, scol3
+### Création état True pour le bouton cliqué
+        if credit_overview_bouton:
+                st.session_state.afficher = not st.session_state.afficher
+                st.session_state["credit_overview_clicked"] = True
+        if st.session_state.afficher:
+######### Affichage des probas et du bouton show explanations
+            if "credit_overview_clicked" in st.session_state and st.session_state["credit_overview_clicked"]:
+            # afficher les probas
+                show_proba(df,list_IDS,selected_ID)
+
+                # centrer le bouton et l'afficher 
+                scol1,scol2 = st.columns((1,2))
+                with scol1:
+                    st.write("")
+                with scol2:
+                    show_explanations_button = st.button("Show Explanations")
+    ## Création état True pour le bouton cliqué 
+                if show_explanations_button:
+                    st.session_state["show_exp_clicked"] = True
+
+                    if 'show_exp_clicked' in st.session_state:
+                        #st.session_state["credit_overview_clicked"] = True
+                        with col2:
+                            test_affichage(df)
+        #show_explanations(selected_ID)
+
+
+  #for key in st.session_state.keys():
+   # del st.session_state[key]    
+#alt.themes.enable("dark")
+#######################
+# Sidebar
+# Initialisation de la variable d'état si elle n'existe pas

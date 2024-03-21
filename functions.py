@@ -98,7 +98,7 @@ def show_proba(df,list_IDS,selected_ID):
     #######################
     # Dashboard Main Panel
   # Dashboard Main Panel
-    #col1, col2, col3 = st.columns((1.5, 4.5, 2), gap='medium')
+    col1, col2= st.columns((1, 1), gap='medium')
 
     #st.markdown('#### Probabilité de remboursement')
     condition = df['SK_ID_CURR'] == selected_ID
@@ -114,20 +114,27 @@ def show_proba(df,list_IDS,selected_ID):
     donut_chart_greater = make_donut(proba_remboursement , 'Remboursement', 'green')
     donut_chart_less = make_donut(proba_default, 'Défaut', 'red')
 
-    # Affichage des résultats dans Streamlit
-    #markdown('#### Probabilité de remboursement')
-    st.altair_chart(donut_chart_greater, use_container_width=True)
-
-    #markdown('#### Probabilité de défaut')
-    st.altair_chart(donut_chart_less, use_container_width=True)
-
+## variable pour afficher le statut du crédit
     credit_status = df[condition]["credit accordé == 0"].tolist()
-    if credit_status and credit_status[0] == 0:
-        st.markdown("<h3 style='color:green; font-size:24px;'>Crédit accordé</h3>", unsafe_allow_html=True)
-    else:
-        st.markdown("<h3 style='color:red; font-size:24px;'>Crédit non accordé</h3>", unsafe_allow_html=True)
+    # Affichage des résultats dans Streamlit
+    with col1:
+        st.markdown('###### Proba remboursement')
+        st.altair_chart(donut_chart_greater, use_container_width=True)
+    with col2:
+        st.markdown('###### Proba défaut')
+        st.altair_chart(donut_chart_less, use_container_width=True)
 
-
+    del col1,col2
+    col1,col2= st.columns((1,2))
+    with col1:
+        st.write("")
+    with col2:
+        if credit_status and credit_status[0] == 0:
+            st.markdown("<h3 style='color:green; font-size:24px;'>Crédit accordé</h3>", unsafe_allow_html=True)
+        else:
+            st.markdown("<h3 style='color:red; font-size:24px;'>Crédit non accordé</h3>", unsafe_allow_html=True)
+        
+    
 
 
 
@@ -141,7 +148,7 @@ def client_overview(df, selected_ID):
     dict_sel= {"CODE_GENDER":"Aucun", "AMT_INCOME_TOTAL":0, "AMT_CREDIT":0, "AMT_ANNUITY":0, "AMT_GOODS_PRICE":0, "DAYS_BIRTH":0}
     #col1, col2, col3 = st.columns((1.5, 4.5, 2), gap='medium')
     col_sel=["CODE_GENDER", "AMT_INCOME_TOTAL", "AMT_CREDIT", "AMT_ANNUITY", "AMT_GOODS_PRICE", "DAYS_BIRTH"]
-    col_names= ["Sexe", "Total Income", "Credit Amount", "Annuities", "Goods Price", "Age"]
+    col_names= ["Sexe", "Annual Income", "Credit Amount", "Annuities", "Goods Price", "Age"]
     client= df[df["SK_ID_CURR"]== selected_ID]
     client_att = client[col_sel].iloc[0] # Sélectionner les attributs
 
@@ -151,24 +158,49 @@ def client_overview(df, selected_ID):
         dict_sel["CODE_GENDER"] = "Homme"
 
     if client_att[1] > 0:
-        dict_sel["AMT_INCOME_TOTAL"] = client_att[1]
+        dict_sel["AMT_INCOME_TOTAL"] = round(client_att[1])
     if client_att[2] > 0:
-        dict_sel["AMT_CREDIT"] = client_att[2]
+        dict_sel["AMT_CREDIT"] = round(client_att[2])
     if client_att[3] > 0:
-        dict_sel["AMT_ANNUITY"] = client_att[3]
+        dict_sel["AMT_ANNUITY"] = round(client_att[3])
     if client_att[4] > 0:
-        dict_sel["AMT_GOODS_PRICE"] = client_att[4]
+        dict_sel["AMT_GOODS_PRICE"] = round(client_att[4])
     if client_att[5]<0:
         dict_sel["DAYS_BIRTH"] = round(-client_att[5]/365)
     
     # Création des inputs
+    st.write("### Input Data")
+    col1,col2,col3= st.columns(3)
     
-    for col_name, sel_key in zip(col_names, col_sel):
-        user_input = st.text_input(col_name, dict_sel[sel_key])
-        # Vous pouvez utiliser user_input comme vous le souhaitez, par exemple pour mettre à jour dict_sel ou pour d'autres logiques.
+    gender= col1.text_input(col_names[0],dict_sel["CODE_GENDER"])
+    age = col1.number_input(col_names[5],dict_sel["DAYS_BIRTH"])
 
-   # st.text_input("Sexe")
-    #st.write(dict_sel["CODE_GENDER"])
+    income = col2.number_input(col_names[1], dict_sel["AMT_INCOME_TOTAL"])
+    goods = col2.number_input(col_names[4],dict_sel["AMT_GOODS_PRICE"])
+
+    credit= col3.number_input(col_names[2],dict_sel["AMT_CREDIT"])
+    annuities= col3.number_input(col_names[3],dict_sel["AMT_ANNUITY"])
+    
+    del col1,col2,col3
+    col1,col2,col3 = st.columns((2,1,1))
+    ## création détails et mettre à gauche####
+    with col1:
+        st.write("### Details client")  
+    with col2:
+        st.write("")
+    with col3:
+        st.write("")
+
+    del col1,col2,col3
+    col1,col2,col3= st.columns(3)
+    
+    credit_income_percent= round(dict_sel["AMT_CREDIT"]*100/dict_sel["AMT_INCOME_TOTAL"],2)
+    annuity_income_percent= round(dict_sel["AMT_ANNUITY"]*100/dict_sel["AMT_INCOME_TOTAL"],2)
+    credit_term = round(dict_sel["AMT_CREDIT"]/dict_sel["AMT_ANNUITY"])
+
+    col1.metric(label="Credit Income %", value=f"{credit_income_percent:,.2f}%")
+    col2.metric(label="Annuity Income %", value=f"{annuity_income_percent:,.0f}%")
+    col3.metric(label="Credit Term", value=f"{credit_term:,.0f} Years")
             
 
 
@@ -200,3 +232,7 @@ def show_explanations(selected_ID):
     #with col2:
     fig = exp.as_pyplot_figure()
     st.pyplot(fig)  # Affichez la figure dans Streamlit
+
+
+def test_affichage(df):
+    st.write(df)
