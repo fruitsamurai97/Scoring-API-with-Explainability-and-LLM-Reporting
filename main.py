@@ -70,14 +70,8 @@ col1, col2 = st.columns((3,4), gap='medium')
 
 
     
-st.write(st.session_state)
 
 if 'validate_clicked' in st.session_state and st.session_state["validate_clicked"]:
-    #if 'show_exp_clicked' in st.session_state and st.session_state["show_exp_clicked"]:
-    #    st.session_state["credit_overview_clicked"] = True
-    #else:
-    #    st.session_state["credit_overview_clicked"] = False #initialisation de la feuille
-    
     with col1:
         client_overview(df, selected_ID)
         scol1,scol2,scol3 = st.columns((1,2,1))
@@ -112,8 +106,8 @@ if 'validate_clicked' in st.session_state and st.session_state["validate_clicked
                     if 'show_exp_clicked' in st.session_state:
                         #st.session_state["credit_overview_clicked"] = True
                         with col2:
-                            test_affichage(df)
-        #show_explanations(selected_ID)
+                            #test_affichage(df)
+                            show_explanations(selected_ID)
 
 
   #for key in st.session_state.keys():

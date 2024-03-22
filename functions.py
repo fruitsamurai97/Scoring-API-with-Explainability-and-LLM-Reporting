@@ -140,9 +140,7 @@ def show_proba(df,list_IDS,selected_ID):
 
     ################## Create client overview ###############################
 def client_overview(df, selected_ID):
-        #df_desc = pd.read_csv("Assets/Data/Columns_description.csv", encoding='ISO-8859-1')
-        #df_desc=df_desc[["Row","Description"]]
-        #df_desc= df_desc.rename(columns={"Row":"Feature"})
+        
         
         
     dict_sel= {"CODE_GENDER":"Aucun", "AMT_INCOME_TOTAL":0, "AMT_CREDIT":0, "AMT_ANNUITY":0, "AMT_GOODS_PRICE":0, "DAYS_BIRTH":0}
@@ -193,7 +191,7 @@ def client_overview(df, selected_ID):
 
     del col1,col2,col3
     col1,col2,col3= st.columns(3)
-    
+
     credit_income_percent= round(dict_sel["AMT_CREDIT"]*100/dict_sel["AMT_INCOME_TOTAL"],2)
     annuity_income_percent= round(dict_sel["AMT_ANNUITY"]*100/dict_sel["AMT_INCOME_TOTAL"],2)
     credit_term = round(dict_sel["AMT_CREDIT"]/dict_sel["AMT_ANNUITY"])
@@ -228,7 +226,15 @@ def show_explanations(selected_ID):
     idx_client = df.index[condition].tolist()[0]
     instance = test_x_np[idx_client]
     exp = explainer.explain_instance(data_row=instance, predict_fn=clf.predict_proba, num_features=6)
-
+    #exp.as_list()
+    #important_columns= [condition.split(' ')[0] for condition, value in exp.as_list()]
+    #df_desc = pd.read_csv("Assets/Data/Columns_description.csv", encoding='ISO-8859-1')
+    #df_desc=df_desc[["Row","Description"]]
+    #df_desc= df_desc.rename(columns={"Row":"Feature"})
+    #list_desc=[]
+    #for col in important_columns:
+    #    list_desc.append(df_desc[df_desc["Feature"]==col ].iloc[0]["Description"])
+    #st.write("")
     #with col2:
     fig = exp.as_pyplot_figure()
     st.pyplot(fig)  # Affichez la figure dans Streamlit
