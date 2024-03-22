@@ -6,6 +6,9 @@ import altair as alt
 #import plotly.express as px
 import numpy as np
 import matplotlib.pyplot as plt
+from azure.storage.blob import BlobServiceClient, generate_blob_sas, BlobSasPermissions
+from datetime import datetime, timedelta
+
 ##############################
 
 #############import funcitons
@@ -16,6 +19,17 @@ from functions import import_columns
 from functions import client_overview
 from functions import show_explanations
 from functions import test_affichage
+
+
+
+########## Setting up Azure depot###############
+account_name = "fruitsamurai97depot"
+account_key=''
+with open("azure_container_key.txt", "r") as my_key:
+    account_key= my_key.read()
+container_name= "assets"
+
+#################################################
 
 ################ initialisation affichage ##############
 if 'afficher' not in st.session_state:
@@ -36,12 +50,14 @@ st.set_page_config(
 
 
 ################ Load data~###########
-df, train_df= load_data()
-columns_description = import_columns()
+df, train_df,clf= load_data()
+#columns_description = import_columns()
 col_selection = [c for c in df.columns if c not in ['TARGET', 'credit accordé == 0', 'Proba de remboursement']]
 test_df= df[col_selection]
 list_IDS = df["SK_ID_CURR"].unique().tolist()
 ###########################################
+
+
 #######initialisation des états ############
 if 'validate_clicked' not in st.session_state:
     st.session_state['validate_clicked'] = False
@@ -73,7 +89,7 @@ col1, col2 = st.columns((3,4), gap='medium')
 
 if 'validate_clicked' in st.session_state and st.session_state["validate_clicked"]:
     with col1:
-        client_overview(df, selected_ID)
+        client_overview(selected_ID)
         scol1,scol2,scol3 = st.columns((1,2,1))
     #affichage du bouton qui permet d'afficher l'état du crédit
         with scol1:
@@ -91,7 +107,7 @@ if 'validate_clicked' in st.session_state and st.session_state["validate_clicked
 ######### Affichage des probas et du bouton show explanations
             if "credit_overview_clicked" in st.session_state and st.session_state["credit_overview_clicked"]:
             # afficher les probas
-                show_proba(df,list_IDS,selected_ID)
+                show_proba(selected_ID)
 
                 # centrer le bouton et l'afficher 
                 scol1,scol2 = st.columns((1,2))

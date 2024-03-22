@@ -12,7 +12,18 @@ import lime.lime_tabular
 from joblib import load
 from lightgbm import LGBMClassifier
 from sklearn.model_selection import train_test_split
+from azure.storage.blob import BlobServiceClient, generate_blob_sas, BlobSasPermissions
+from joblib import dump, load
+import io
+from lightgbm import plot_importance
+from datetime import datetime, timedelta
 
+################################
+account_name = "fruitsamurai97depot"
+account_key=''
+with open("azure_container_key.txt", "r") as my_key:
+    account_key= my_key.read()
+container_name= "assets"
 ################################
 
 
@@ -63,16 +74,70 @@ def make_donut(input_response, input_text, input_color):
   ).properties(width=130, height=130)
   return plot_bg + plot + text
 
-
+##############################
 
 
 ################ Load data~###########
 # Utilisez @st.cache pour charger et préparer les données
 
 def load_data():
-    df = pd.read_csv("Assets/Data/test.csv")
-    train_df = pd.read_csv("Assets/Data/df_train_base.csv")  
-    return df, train_df
+
+    connect_str = 'DefaultEndpointsProtocol=https;AccountName=' + account_name + ';AccountKey=' + account_key + ';EndpointSuffix=core.windows.net'
+    blob_service_client = BlobServiceClient.from_connection_string(connect_str)
+
+    #use the client to connect to the container
+    container_client = blob_service_client.get_container_client(container_name)
+
+    #get a list of all blob files in the container
+    blob_list = []
+    for blob_i in container_client.list_blobs():
+        blob_list.append(blob_i.name)
+
+    ### load my model from Azure #######
+    test_df_name = "test.csv"
+    train_df_name = "df_train_base.csv"
+    model_blob_name = "modele_base.joblib" 
+    blob_client = blob_service_client.get_blob_client(container=container_name, blob=model_blob_name)
+    stream = io.BytesIO()
+    blob_client.download_blob().download_to_stream(stream)
+    stream.seek(0)  # Go back to the start of the stream
+    clf = load(stream)
+    ######################################
+
+    #### load test data set ############
+    sas_test = generate_blob_sas(account_name = account_name,
+                                container_name = container_name,
+                                blob_name = test_df_name,
+                                account_key=account_key,
+                                permission=BlobSasPermissions(read=True),
+                                expiry=datetime.utcnow() + timedelta(hours=1))
+
+    sas_test_url = 'https://' + account_name+'.blob.core.windows.net/' + container_name + '/' + test_df_name + '?' + sas_test
+    df= pd.read_csv(sas_test_url)
+    #####################################
+
+    ##### load data train from Azure#########
+    sas_train = generate_blob_sas(account_name = account_name,
+                                container_name = container_name,
+                                blob_name = train_df_name,
+                                account_key=account_key,
+                                permission=BlobSasPermissions(read=True),
+                                expiry=datetime.utcnow() + timedelta(hours=1))
+
+    sas_train_url = 'https://' + account_name+'.blob.core.windows.net/' + container_name + '/' + train_df_name + '?' + sas_train
+    train_df = pd.read_csv(sas_train_url)  
+    ########################################
+    return df, train_df, clf
+
+######### Loading Data ####################
+df, train_df,clf= load_data()
+#columns_description = import_columns()
+col_selection = [c for c in df.columns if c not in ['TARGET', 'credit accordé == 0', 'Proba de remboursement']]
+test_df= df[col_selection]
+list_IDS = df["SK_ID_CURR"].unique().tolist()
+##############################################
+
+
 
 def import_columns():
     col_desc = pd.read_csv("Assets/Data/Columns_description.csv", encoding='ISO-8859-1')
@@ -81,8 +146,7 @@ def import_columns():
     return col_desc
 
 ###### Afficher les probabilités de défault ############
-def show_proba(df,list_IDS,selected_ID):
-
+def show_proba(selected_ID):
     #######################
     # Initialisation des données de probabilité pour le premier élément de la liste
     default_id = list_IDS[0]
@@ -134,14 +198,10 @@ def show_proba(df,list_IDS,selected_ID):
         else:
             st.markdown("<h3 style='color:red; font-size:24px;'>Crédit non accordé</h3>", unsafe_allow_html=True)
         
-    
-
 
 
     ################## Create client overview ###############################
-def client_overview(df, selected_ID):
-        
-        
+def client_overview(selected_ID):   
         
     dict_sel= {"CODE_GENDER":"Aucun", "AMT_INCOME_TOTAL":0, "AMT_CREDIT":0, "AMT_ANNUITY":0, "AMT_GOODS_PRICE":0, "DAYS_BIRTH":0}
     #col1, col2, col3 = st.columns((1.5, 4.5, 2), gap='medium')
@@ -211,12 +271,12 @@ def client_overview(df, selected_ID):
 def show_explanations(selected_ID):
     #col1, col2, col3 = st.columns((1.5, 4.5, 2), gap='medium')
 
-    df,train_df = load_data()
+    df,train_df,clf = load_data()
     feats = [f for f in train_df.columns if f not in ['TARGET', 'SK_ID_CURR', 'SK_ID_BUREAU', 'SK_ID_PREV', 'index']]
     train_x, valid_x, train_y, valid_y = train_test_split(train_df[feats], train_df["TARGET"], test_size=0.2, random_state=42)
     test_x = df[feats]
     train_x_np, test_x_np = train_x.to_numpy(), test_x.to_numpy()
-    clf = load('Assets/Models/modele_base.joblib')
+    #clf = load('Assets/Models/modele_base.joblib')
     ### Partie 2 (afficher les explication)            
     explainer = lime.lime_tabular.LimeTabularExplainer(training_data=train_x_np,feature_names=test_x.columns.tolist(),  class_names=['Crédit autorisé', 'Default'],
         verbose=True,
