@@ -15,10 +15,10 @@ from datetime import datetime, timedelta
 #from functions import make_donut
 from functions import load_data
 from functions import show_proba
-from functions import import_columns
+#from functions import import_columns
 from functions import client_overview
 from functions import show_explanations
-from functions import test_affichage
+#from functions import test_affichage
 
 
 
@@ -50,9 +50,9 @@ st.set_page_config(
 
 
 ################ Load data~###########
-df, train_df,clf= load_data()
+df= load_data()
 #columns_description = import_columns()
-col_selection = [c for c in df.columns if c not in ['TARGET', 'credit accordé == 0', 'Proba de remboursement']]
+col_selection = [c for c in df.columns if c not in ['TARGET','IF_0_CREDIT_IS_OKAY', 'PAYBACK_PROBA','LIME_FEATURES_NAMES','LIME_FEATURES_THRESHOLD','LIME_FEATURES_IMPACT']]
 test_df= df[col_selection]
 list_IDS = df["SK_ID_CURR"].unique().tolist()
 ###########################################

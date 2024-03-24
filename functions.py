@@ -88,20 +88,11 @@ def load_data():
     #use the client to connect to the container
     container_client = blob_service_client.get_container_client(container_name)
 
-    #get a list of all blob files in the container
-    blob_list = []
-    for blob_i in container_client.list_blobs():
-        blob_list.append(blob_i.name)
+    
 
     ### load my model from Azure #######
-    test_df_name = "test.csv"
-    train_df_name = "df_train_base.csv"
-    model_blob_name = "modele_base.joblib" 
-    blob_client = blob_service_client.get_blob_client(container=container_name, blob=model_blob_name)
-    stream = io.BytesIO()
-    blob_client.download_blob().download_to_stream(stream)
-    stream.seek(0)  # Go back to the start of the stream
-    clf = load(stream)
+    test_df_name = "test_df.csv"
+    
     ######################################
 
     #### load test data set ############
@@ -116,34 +107,25 @@ def load_data():
     df= pd.read_csv(sas_test_url)
     #####################################
 
-    ##### load data train from Azure#########
-    sas_train = generate_blob_sas(account_name = account_name,
-                                container_name = container_name,
-                                blob_name = train_df_name,
-                                account_key=account_key,
-                                permission=BlobSasPermissions(read=True),
-                                expiry=datetime.utcnow() + timedelta(hours=1))
-
-    sas_train_url = 'https://' + account_name+'.blob.core.windows.net/' + container_name + '/' + train_df_name + '?' + sas_train
-    train_df = pd.read_csv(sas_train_url)  
+   
     ########################################
-    return df, train_df, clf
+    return df
 
 ######### Loading Data ####################
-df, train_df,clf= load_data()
+df= load_data()
 #columns_description = import_columns()
-col_selection = [c for c in df.columns if c not in ['TARGET', 'credit accordé == 0', 'Proba de remboursement']]
+col_selection = [c for c in df.columns if c not in ['TARGET','IF_0_CREDIT_IS_OKAY', 'PAYBACK_PROBA','LIME_FEATURES_NAMES','LIME_FEATURES_THRESHOLD','LIME_FEATURES_IMPACT']]
 test_df= df[col_selection]
 list_IDS = df["SK_ID_CURR"].unique().tolist()
 ##############################################
 
 
 
-def import_columns():
-    col_desc = pd.read_csv("Assets/Data/Columns_description.csv", encoding='ISO-8859-1')
-    col_desc=col_desc[["Row","Description"]]
-    col_desc= col_desc.rename(columns={"Row":"Feature"})
-    return col_desc
+#def import_columns():
+#    col_desc = pd.read_csv("Assets/Data/Columns_description.csv", encoding='ISO-8859-1')
+#    col_desc=col_desc[["Row","Description"]]
+#    col_desc= col_desc.rename(columns={"Row":"Feature"})
+#    return col_desc
 
 ###### Afficher les probabilités de défault ############
 def show_proba(selected_ID):
@@ -151,7 +133,7 @@ def show_proba(selected_ID):
     # Initialisation des données de probabilité pour le premier élément de la liste
     default_id = list_IDS[0]
     condition = df['SK_ID_CURR'] == default_id
-    elt = df[condition]["Proba de remboursement"].tolist()[0]
+    elt = df[condition]["PAYBACK_PROBA"].tolist()[0]
     if elt:  # Assurez-vous que la liste n'est pas vide pour le premier ID
         default_proba_remboursement = round(elt*100)
         default_proba_default = round((1 - elt)*100)
@@ -166,7 +148,7 @@ def show_proba(selected_ID):
 
     #st.markdown('#### Probabilité de remboursement')
     condition = df['SK_ID_CURR'] == selected_ID
-    elt = df[condition]["Proba de remboursement"].tolist()[0]
+    elt = df[condition]["PAYBACK_PROBA"].tolist()[0]
     if elt:  # Assurez-vous que la liste n'est pas vide
         proba_remboursement = round(elt*100)
         proba_default = round((1-elt)*100)
@@ -179,7 +161,7 @@ def show_proba(selected_ID):
     donut_chart_less = make_donut(proba_default, 'Défaut', 'red')
 
 ## variable pour afficher le statut du crédit
-    credit_status = df[condition]["credit accordé == 0"].tolist()
+    credit_status = df[condition]["IF_0_CREDIT_IS_OKAY"].tolist()
     # Affichage des résultats dans Streamlit
     with col1:
         st.markdown('###### Proba remboursement')
@@ -271,33 +253,11 @@ def client_overview(selected_ID):
 def show_explanations(selected_ID):
     #col1, col2, col3 = st.columns((1.5, 4.5, 2), gap='medium')
 
-    df,train_df,clf = load_data()
-    feats = [f for f in train_df.columns if f not in ['TARGET', 'SK_ID_CURR', 'SK_ID_BUREAU', 'SK_ID_PREV', 'index']]
-    train_x, valid_x, train_y, valid_y = train_test_split(train_df[feats], train_df["TARGET"], test_size=0.2, random_state=42)
-    test_x = df[feats]
-    train_x_np, test_x_np = train_x.to_numpy(), test_x.to_numpy()
-    #clf = load('Assets/Models/modele_base.joblib')
-    ### Partie 2 (afficher les explication)            
-    explainer = lime.lime_tabular.LimeTabularExplainer(training_data=train_x_np,feature_names=test_x.columns.tolist(),  class_names=['Crédit autorisé', 'Default'],
-        verbose=True,
-        mode='classification'
-        )
     condition = df['SK_ID_CURR'] == selected_ID
-    idx_client = df.index[condition].tolist()[0]
-    instance = test_x_np[idx_client]
-    exp = explainer.explain_instance(data_row=instance, predict_fn=clf.predict_proba, num_features=6)
-    #exp.as_list()
-    #important_columns= [condition.split(' ')[0] for condition, value in exp.as_list()]
-    #df_desc = pd.read_csv("Assets/Data/Columns_description.csv", encoding='ISO-8859-1')
-    #df_desc=df_desc[["Row","Description"]]
-    #df_desc= df_desc.rename(columns={"Row":"Feature"})
-    #list_desc=[]
-    #for col in important_columns:
-    #    list_desc.append(df_desc[df_desc["Feature"]==col ].iloc[0]["Description"])
-    #st.write("")
-    #with col2:
-    fig = exp.as_pyplot_figure()
-    st.pyplot(fig)  # Affichez la figure dans Streamlit
+    st.markdown('#### Best 5 features')
+    st.write(df[condition]["LIME_FEATURES_NAMES"])
+    #fig = exp.as_pyplot_figure()
+    #st.pyplot(fig)  # Affichez la figure dans Streamlit
 
 
 def test_affichage(df):
