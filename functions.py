@@ -212,14 +212,14 @@ def client_overview(selected_ID):
     st.write("### Input Data")
     col1,col2,col3= st.columns(3)
     
-    gender= col1.text_input(col_names[0],dict_sel["CODE_GENDER"])
-    age = col1.number_input(col_names[5],dict_sel["DAYS_BIRTH"])
+    gender= col1.text_input(col_names[0],dict_sel["CODE_GENDER"], disabled=True)
+    age = col1.number_input(col_names[5],dict_sel["DAYS_BIRTH"], disabled=True)
 
-    income = col2.number_input(col_names[1], dict_sel["AMT_INCOME_TOTAL"])
-    goods = col2.number_input(col_names[4],dict_sel["AMT_GOODS_PRICE"])
+    income = col2.number_input(col_names[1], dict_sel["AMT_INCOME_TOTAL"], disabled=True)
+    goods = col2.number_input(col_names[4],dict_sel["AMT_GOODS_PRICE"], disabled=True)
 
-    credit= col3.number_input(col_names[2],dict_sel["AMT_CREDIT"])
-    annuities= col3.number_input(col_names[3],dict_sel["AMT_ANNUITY"])
+    credit= col3.number_input(col_names[2],dict_sel["AMT_CREDIT"], disabled=True)
+    annuities= col3.number_input(col_names[3],dict_sel["AMT_ANNUITY"], disabled=True)
     
     del col1,col2,col3
     col1,col2,col3 = st.columns((2,1,1))
