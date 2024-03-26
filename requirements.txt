@@ -9,4 +9,4 @@ scikit-learn
 joblib
 matplotlib
 azure-storage-blob
-
+dill
