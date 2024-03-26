@@ -10,3 +10,4 @@ joblib
 matplotlib
 azure-storage-blob
 dill
+seaborn
