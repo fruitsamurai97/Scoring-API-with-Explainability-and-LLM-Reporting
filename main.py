@@ -7,7 +7,6 @@ import altair as alt
 import numpy as np
 import matplotlib.pyplot as plt
 from datetime import datetime, timedelta
-import plotly.graph_objs as go
 from azure.storage.blob import BlobServiceClient, generate_blob_sas, BlobSasPermissions
 from datetime import datetime, timedelta
 
@@ -18,13 +17,8 @@ from datetime import datetime, timedelta
 from functions import load_data
 from functions import load_model
 from functions import client_overview
-
+from functions import load_explainer
 from functions import show_proba, show_explanations, highlight_instance
-
-
-
-
-
 
 
 #######################
@@ -33,13 +27,16 @@ st.set_page_config(
     page_title="First app scoring",
     page_icon="🏂",
     layout="wide",
-    initial_sidebar_state="expanded")
+    initial_sidebar_state="expanded"
+    )
 
 
 
 ################ Load data and model~###########
 df= load_data()
 clf = load_model()
+explainer= load_explainer()  
+
 list_IDS = df["SK_ID_CURR"].unique().tolist()
 
 
@@ -100,10 +97,10 @@ with col2:
                 with col2:
                     st.markdown("")
                     st.markdown("")
-                    show_explanations(df,selected_ID,clf)
+                    show_explanations(df,selected_ID,clf,explainer)
                 with col1:
                     st.markdown("#### Display a feature")
-                    highlight_instance(df,selected_ID,clf)
+                    highlight_instance(df,selected_ID,clf,explainer)
 
                 
 

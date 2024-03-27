@@ -1,26 +1,20 @@
 #######################
-
 import streamlit as st
 import pandas as pd
-import altair as alt
 #import plotly.express as px
 import numpy as np
 import matplotlib.pyplot as plt
-import plotly.graph_objs as go
 import ast
 import seaborn as sns
 ##############################
 import lime 
 import lime.lime_tabular
 from joblib import load
-from lightgbm import LGBMClassifier
-from sklearn.model_selection import train_test_split
-from joblib import dump, load
 import io
-from lightgbm import plot_importance
 from datetime import datetime, timedelta
 from azure.storage.blob import BlobServiceClient, generate_blob_sas, BlobSasPermissions
 import dill 
+import plotly.graph_objs as go
 
 ##############
 from fct_plot import make_donut
@@ -42,11 +36,11 @@ blob_service_client = BlobServiceClient.from_connection_string(connect_str)
 #use the client to connect to the container
 container_client = blob_service_client.get_container_client(container_name)
 
-#
+
 
 ################ Load data~###########
 # Utilisez @st.cache pour charger et préparer les données
-
+@st.cache_data
 def load_data():
 
     
@@ -61,13 +55,9 @@ def load_data():
 
     sas_test_url = 'https://' + account_name+'.blob.core.windows.net/' + container_name + '/' + test_df_name + '?' + sas_test
     df= pd.read_csv(sas_test_url)
-    #####################################
-    #df= pd.read_csv("./Data/test_df.csv")
-    #####################################
-    ########################################
     return df
 
-
+@st.cache_resource
 def load_model():
     model_blob_name = "modele_base.joblib" 
     blob_client = blob_service_client.get_blob_client(container=container_name, blob=model_blob_name)
@@ -79,38 +69,20 @@ def load_model():
     return clf
 
 
-
-
-
-#list_IDS = df["SK_ID_CURR"].unique().tolist()
-##############################################
-
-
-
-
-
-def load_explanations(df,selected_ID,clf):
+################## Load LIME explainer ############################
+@st.cache_resource
+def load_explainer():
     explainer_blob_name = 'lime_explainer.pkl'
     blob_client = blob_service_client.get_blob_client(container=container_name, blob=explainer_blob_name)
     stream = io.BytesIO()
     blob_client.download_blob().download_to_stream(stream)
     stream.seek(0)  # Réinitialise le pointeur au début du stream pour la lecture
     explainer = dill.load(stream)  # Chargez directement à partir du stream
+    return explainer
 
-    
-    feats = [f for f in df.columns if f not in ['TARGET','SK_ID_CURR','SK_ID_BUREAU','SK_ID_PREV','index',"IF_0_CREDIT_IS_OKAY","PAYBACK_PROBA"]]
-    test_x = df[feats]
-    test_x_np = test_x.to_numpy()
-    condition = df['SK_ID_CURR'] == selected_ID
-    client_instance = test_x_np[df[condition].index[0]]  
-    exp= explainer.explain_instance(
-        data_row=client_instance, 
-        predict_fn=clf.predict_proba, 
-        num_features=5
-    )
-    #st.write(exp.as_list())
-    features_names,lime_threshold, features_impact, exp_list = extraction(exp.as_list())
-    return features_names,lime_threshold, features_impact, exp_list
+#########################################################################
+
+
 
     ################## Create client overview ###############################
 def client_overview(df,selected_ID):         
@@ -227,14 +199,20 @@ def show_proba(df,selected_ID):
 
 ######################## Voir les explications ################
 #@st.cache_data
-def show_explanations(df,selected_ID,clf):
-    # Assurez-vous que 'df' est votre DataFrame qui contient les données nécessaires
-
-    # Trouver les données correspondant à l'ID sélectionné
-    
+def show_explanations(df,selected_ID,clf,explainer):
+        
     st.markdown('#### Top 5 most important features to credit decision')
-    
-    features_names,lime_threshold, features_impact, exp_list = load_explanations(df,selected_ID,clf)
+    feats = [f for f in df.columns if f not in ['TARGET','SK_ID_CURR','SK_ID_BUREAU','SK_ID_PREV','index',"IF_0_CREDIT_IS_OKAY","PAYBACK_PROBA"]]
+    test_x = df[feats]
+    test_x_np = test_x.to_numpy()
+    condition = df['SK_ID_CURR'] == selected_ID
+    client_instance = test_x_np[df[condition].index[0]]  
+    exp= explainer.explain_instance(
+        data_row=client_instance, 
+        predict_fn=clf.predict_proba, 
+        num_features=5
+    )
+    features_names,lime_threshold, features_impact, exp_list = extraction(exp.as_list())
     dict_lime = dict(zip(features_names, features_impact))
     colors_original_order = ['darkgreen' if x < 0 else 'darkred' for x in dict_lime.values()]
     df_lime= pd.DataFrame(dict_lime.items(),columns=["Feature","Value"])
@@ -270,11 +248,19 @@ def show_explanations(df,selected_ID,clf):
     
 
    
-def highlight_instance(df,selected_ID,clf):
+def highlight_instance(df,selected_ID,clf,explainer):
 
+    feats = [f for f in df.columns if f not in ['TARGET','SK_ID_CURR','SK_ID_BUREAU','SK_ID_PREV','index',"IF_0_CREDIT_IS_OKAY","PAYBACK_PROBA"]]
+    test_x = df[feats]
+    test_x_np = test_x.to_numpy()
     condition = df['SK_ID_CURR'] == selected_ID
-    features_names,lime_threshold, features_impact, exp_list= load_explanations(df,selected_ID,clf)
-
+    client_instance = test_x_np[df[condition].index[0]]  
+    exp= explainer.explain_instance(
+        data_row=client_instance, 
+        predict_fn=clf.predict_proba, 
+        num_features=5
+    )
+    features_names,lime_threshold, features_impact, exp_list = extraction(exp.as_list())
     features_values = df[condition][features_names].iloc[0].tolist() ## Récupérer les valeur de ces 5 features pour ce client
     dict_lime = dict(zip(features_names, features_values)) # Mettre ces valeurs dans un dictionnaire
     dict_impact = dict(zip(features_names, features_impact)) # Mettre les impacts des features dans un dict
@@ -311,15 +297,13 @@ def highlight_instance(df,selected_ID,clf):
         # Highlight the value for the specified original instance if it is within the new range
         plt.axvline(feature_value, color=color, linestyle='-', linewidth=2)
         # Add a label next to the line
-        plt.text(feature_value, plt.gca().get_ylim()[1] * 0.70, label, color=color, horizontalalignment='right')
+        #plt.text(feature_value, plt.gca().get_ylim()[1] * 0.70, label, color=color, horizontalalignment='right')
         
         # Highlight the new instance value in yellow
         if (lime_threshold >= limite_basse) & (lime_threshold <= limite_haute) :
             plt.axvline(lime_threshold, color='yellow', linestyle='--', linewidth=2)
             
         else:
-            #a,b,c, exp_list= load_explanations(selected_ID)
-            #del a,b,c
             for e in exp_list:
                 if extract_bounds(e[0]):
                     lime_inf,lime_sup= extract_bounds(e[0])
