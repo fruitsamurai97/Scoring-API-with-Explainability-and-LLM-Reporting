@@ -71,7 +71,7 @@ def load_model():
 
 ################## Load LIME explainer ############################
 @st.cache_resource
-def load_explainer():
+def load_explainer(): 
     explainer_blob_name = 'lime_explainer.pkl'
     blob_client = blob_service_client.get_blob_client(container=container_name, blob=explainer_blob_name)
     stream = io.BytesIO()
@@ -195,24 +195,23 @@ def show_proba(df,selected_ID):
             st.markdown("<h3 style='color:green; font-size:24px;'>Crédit accordé</h3>", unsafe_allow_html=True)
         else:
             st.markdown("<h3 style='color:red; font-size:24px;'>Crédit non accordé</h3>", unsafe_allow_html=True)
-        
-
-######################## Voir les explications ################
-#@st.cache_data
-def show_explanations(df,selected_ID,clf,explainer):
-        
-    st.markdown('#### Top 5 most important features to credit decision')
+@st.cache_data#(allow_output_mutation=True, show_spinner=False)     
+def load_explanations(df,selected_ID,_clf,_explainer):
     feats = [f for f in df.columns if f not in ['TARGET','SK_ID_CURR','SK_ID_BUREAU','SK_ID_PREV','index',"IF_0_CREDIT_IS_OKAY","PAYBACK_PROBA"]]
     test_x = df[feats]
     test_x_np = test_x.to_numpy()
     condition = df['SK_ID_CURR'] == selected_ID
     client_instance = test_x_np[df[condition].index[0]]  
-    exp= explainer.explain_instance(
+    exp= _explainer.explain_instance(
         data_row=client_instance, 
-        predict_fn=clf.predict_proba, 
+        predict_fn=_clf.predict_proba, 
         num_features=5
     )
     features_names,lime_threshold, features_impact, exp_list = extraction(exp.as_list())
+    return features_names, lime_threshold, features_impact, exp_list 
+######################## Voir les explications ################
+def show_explanations(features_names ,features_impact):
+        
     dict_lime = dict(zip(features_names, features_impact))
     colors_original_order = ['darkgreen' if x < 0 else 'darkred' for x in dict_lime.values()]
     df_lime= pd.DataFrame(dict_lime.items(),columns=["Feature","Value"])
@@ -246,34 +245,21 @@ def show_explanations(df,selected_ID,clf,explainer):
 
     
     
-
    
-def highlight_instance(df,selected_ID,clf,explainer):
+def highlight_instance(df,selected_ID, features_names,lime_threshold, features_impact, exp_list,selected_feature):
 
-    feats = [f for f in df.columns if f not in ['TARGET','SK_ID_CURR','SK_ID_BUREAU','SK_ID_PREV','index',"IF_0_CREDIT_IS_OKAY","PAYBACK_PROBA"]]
-    test_x = df[feats]
-    test_x_np = test_x.to_numpy()
     condition = df['SK_ID_CURR'] == selected_ID
-    client_instance = test_x_np[df[condition].index[0]]  
-    exp= explainer.explain_instance(
-        data_row=client_instance, 
-        predict_fn=clf.predict_proba, 
-        num_features=5
-    )
-    features_names,lime_threshold, features_impact, exp_list = extraction(exp.as_list())
     features_values = df[condition][features_names].iloc[0].tolist() ## Récupérer les valeur de ces 5 features pour ce client
     dict_lime = dict(zip(features_names, features_values)) # Mettre ces valeurs dans un dictionnaire
     dict_impact = dict(zip(features_names, features_impact)) # Mettre les impacts des features dans un dict
     dict_threshold = dict(zip(features_names, lime_threshold)) # Mettre le lime threshold dans un dict
-
-    selected_feature = st.selectbox('Choose a feature to display', features_names) # Choisir le feature à analyser
     feature_value = dict_lime[selected_feature] # Stocker la valeur de ce feature pour ce client
     feature_impact = dict_impact[selected_feature] #Stocker l'impact de ce feature pour la décision de crédit
     lime_threshold = float(dict_threshold[selected_feature])
     # Eliminate top 1% values to remove outliers
     # Calculer les seuils des 1% les plus bas et 1% les plus hauts
-    limite_basse = df[selected_feature].quantile(0.0001)
-    limite_haute = df[selected_feature].quantile(0.9999)
+    limite_basse = df[selected_feature].quantile(0.01)
+    limite_haute = df[selected_feature].quantile(0.99)
 
 
     #threshold = np.percentile(df[selected_feature], 99.99)  # Find the 95th percentile value
@@ -295,20 +281,20 @@ def highlight_instance(df,selected_ID,clf,explainer):
             color = 'red'
             label = 'Negative Contribution  '
         # Highlight the value for the specified original instance if it is within the new range
-        plt.axvline(feature_value, color=color, linestyle='-', linewidth=2)
+        plt.axvline(feature_value, color=color, linestyle='-', linewidth=1)
         # Add a label next to the line
         #plt.text(feature_value, plt.gca().get_ylim()[1] * 0.70, label, color=color, horizontalalignment='right')
         
         # Highlight the new instance value in yellow
         if (lime_threshold >= limite_basse) & (lime_threshold <= limite_haute) :
-            plt.axvline(lime_threshold, color='yellow', linestyle='--', linewidth=2)
+            plt.axvline(lime_threshold, color='yellow', linestyle='--', linewidth=1)
             
         else:
             for e in exp_list:
                 if extract_bounds(e[0]):
                     lime_inf,lime_sup= extract_bounds(e[0])
-                    plt.axvline(lime_inf, color='yellow', linestyle='--', linewidth=2)
-                    plt.axvline(lime_sup, color='yellow', linestyle='--', linewidth=2)
+                    plt.axvline(lime_inf, color='yellow', linestyle='--', linewidth=1)
+                    plt.axvline(lime_sup, color='yellow', linestyle='--', linewidth=1)
         
 
         if (lime_threshold >= limite_basse) & (lime_threshold <= limite_haute) :
