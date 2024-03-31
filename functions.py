@@ -293,8 +293,9 @@ def highlight_instance(df,selected_ID, features_names,lime_threshold, features_i
             for e in exp_list:
                 if extract_bounds(e[0]):
                     lime_inf,lime_sup= extract_bounds(e[0])
-                    plt.axvline(lime_inf, color='yellow', linestyle='--', linewidth=1)
-                    plt.axvline(lime_sup, color='yellow', linestyle='--', linewidth=1)
+                    if (lime_inf >= limite_basse) & (lime_sup<=limite_haute):
+                        plt.axvline(lime_inf, color='yellow', linestyle='--', linewidth=1)
+                        plt.axvline(lime_sup, color='yellow', linestyle='--', linewidth=1)
         
 
         if (lime_threshold >= limite_basse) & (lime_threshold <= limite_haute) :
