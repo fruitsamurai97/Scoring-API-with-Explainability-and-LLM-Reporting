@@ -1,27 +1,6 @@
 <!-- Improved compatibility of back to top link: See: https://github.com/othneildrew/Best-README-Template/pull/73 -->
 <a name="readme-top"></a>
 <!--
-*** Thanks for checking out the Best-README-Template. If you have a suggestion
-*** that would make this better, please fork the repo and create a pull request
-*** or simply open an issue with the tag "enhancement".
-*** Don't forget to give the project a star!
-*** Thanks again! Now go create something AMAZING! :D
--->
-
-
-
-<!-- PROJECT SHIELDS -->
-<!--
-*** I'm using markdown "reference style" links for readability.
-*** Reference links are enclosed in brackets [ ] instead of parentheses ( ).
-*** See the bottom of this document for the declaration of the reference variables
-*** for contributors-url, forks-url, etc. This is an optional, concise syntax you may use.
-*** https://www.markdownguide.org/basic-syntax/#reference-style-links
--->
-
-
-[![LinkedIn][linkedin-shield]][linkedin-url]
-
 
 
 <!-- PROJECT LOGO -->
@@ -47,48 +26,48 @@
 
 
 
-<!-- TABLE OF CONTENTS -->
-<details>
-  <summary>Table of Contents</summary>
-  <ol>
-    <li>
-      <a href="#about-the-project">About The Project</a>
-      <ul>
-        <li><a href="#built-with">Built With</a></li>
-      </ul>
-    </li>
-    <li>
-      <a href="#getting-started">Getting Started</a>
-      <ul>
-        <li><a href="#prerequisites">Prerequisites</a></li>
-        <li><a href="#installation">Installation</a></li>
-      </ul>
-    </li>
-    <li><a href="#usage">Usage</a></li>
-    <li><a href="#roadmap">Roadmap</a></li>
-    <li><a href="#contributing">Contributing</a></li>
-    <li><a href="#license">License</a></li>
-    <li><a href="#contact">Contact</a></li>
-    <li><a href="#acknowledgments">Acknowledgments</a></li>
-  </ol>
-</details>
-
-
 
 <!-- ABOUT THE PROJECT -->
 ## About The Project
 
 [![Product Name Screen Shot][product-screenshot]](https://openclassrooms-scoring.azurewebsites.net/)
 
-Here's a blank template to get started: To avoid retyping too much info. Do a search and replace with your text editor for the following: `github_username`, `repo_name`, `twitter_handle`, `linkedin_username`, `email_client`, `email`, `project_title`, `project_description`
+# Credit Decision Analysis Project
 
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
+## Overview
+This project utilizes a dataset from Kaggle, designed to model and analyze credit loan decisions for individuals. The dataset comprises a main table split into two files: one for training data (including a TARGET column indicating loan repayment outcomes) and one for testing data (without the TARGET column). Through the application developed in Streamlit, users can assess the creditworthiness of potential clients by leveraging a machine learning model trained on the dataset.
+
+## Dataset
+The dataset originates from Kaggle, containing static data for various loan applications. Each row represents a single loan application by a client. The dataset is divided into:
+- **Training data**: Includes the `TARGET` column, which signifies whether the loan was repaid.
+- **Testing data**: Lacks the `TARGET` column, used for model predictions.
+
+## Notebooks
+The transformation of datasets and model training is performed in Jupyter notebooks, located in the `notebooks` folder. The output includes:
+- The testing dataset ready for prediction.
+- A LightGBM model trained on the training data. This model uses a custom metric to penalize false negatives significantly, addressing the risk of predicting a client as creditworthy when they are not.
+- An explanation module using the LIME library, providing insights into the model's decision-making process.
+
+## Application
+The application is developed with Streamlit and requires Python 3.11 or higher. It enables users to:
+1. **Select a Client ID**: Choose from the test dataset.
+2. **View Client Overview**: Display an overview, including the probability of default, probability of payback, and the model's loan decision.
+3. **Model Decision Explanation**: By clicking on "show explanations," users can see the top 5 features influencing the model's decision through the LIME explainer. This includes positive or negative contributions, feature distributions, the specific client's feature values, and LIME thresholds for decision-making.
+
+## Getting Started
+
+### Prerequisites
+Ensure you have Python 3.11 or higher installed on your machine.
+
+### Installation
+1. Clone the repository to your local machine.
+2. Navigate to the project directory and install required dependencies:
+* pip install -r requirements.txt
+3. Run the Streamlit application:
+* streamlit run app.py
 
 
-<!-- MARKDOWN LINKS & IMAGES -->
-<!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
 
 
-[linkedin-shield]: https://img.shields.io/badge/-LinkedIn-black.svg?style=for-the-badge&logo=linkedin&colorB=555
-[linkedin-url]: https://www.linkedin.com/in/mohammed-bendaou-903617135/
+
 [product-screenshot]: images/screenshot.png
