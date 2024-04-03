@@ -60,10 +60,10 @@ Ensure you have Python 3.11 or higher installed on your machine.
 
 ### Installation
 1. Clone the repository to your local machine.
-2. Navigate to the project directory and install required dependencies:
-*pip install -r requirements.txt
+2. Navigate to the project directory and install required dependencies:  
+  *  pip install -r requirements.txt
 3. Run the Streamlit application:
-*streamlit run app.py
+  * streamlit run app.py
 
 
 
