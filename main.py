@@ -35,7 +35,6 @@ df= load_data()
 clf = load_model()
 explainer= load_explainer()  
 list_IDS = df["SK_ID_CURR"].unique().tolist()
-list_models = ["Lightgbm trained on raw dataset","Lightgbm trained on balanced dataset"]
 
 #######Initialize states ############
 

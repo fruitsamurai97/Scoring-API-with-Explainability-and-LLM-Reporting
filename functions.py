@@ -44,7 +44,7 @@ container_client = blob_service_client.get_container_client(container_name)
 def load_data():
 
     
-    test_df_name = "test_df.csv"
+    test_df_name = "test_w2_df.csv"
     #### load test data set ############
     sas_test = generate_blob_sas(account_name = account_name,
                                 container_name = container_name,
@@ -59,7 +59,7 @@ def load_data():
 
 @st.cache_resource
 def load_model():
-    model_blob_name = "modele_base.joblib" 
+    model_blob_name = "Lgb_w2.joblib" 
     blob_client = blob_service_client.get_blob_client(container=container_name, blob=model_blob_name)
     stream = io.BytesIO()
     blob_client.download_blob().download_to_stream(stream)
@@ -72,7 +72,7 @@ def load_model():
 ################## Load LIME explainer ############################
 @st.cache_resource
 def load_explainer(): 
-    explainer_blob_name = 'lime_explainer.pkl'
+    explainer_blob_name = 'lime_explainer_w2.pkl'
     blob_client = blob_service_client.get_blob_client(container=container_name, blob=explainer_blob_name)
     stream = io.BytesIO()
     blob_client.download_blob().download_to_stream(stream)
@@ -197,7 +197,7 @@ def show_proba(df,selected_ID):
             st.markdown("<h3 style='color:red; font-size:24px;'>Crédit non accordé</h3>", unsafe_allow_html=True)
 @st.cache_data#(allow_output_mutation=True, show_spinner=False)     
 def load_explanations(df,selected_ID,_clf,_explainer):
-    feats = [f for f in df.columns if f not in ['TARGET','SK_ID_CURR','SK_ID_BUREAU','SK_ID_PREV','index',"IF_0_CREDIT_IS_OKAY","PAYBACK_PROBA"]]
+    feats = [f for f in df.columns if f not in ['TARGET','SK_ID_CURR','SK_ID_BUREAU','SK_ID_PREV','index',"IF_0_CREDIT_IS_OKAY","PAYBACK_PROBA",'CODE_GENDER']]
     test_x = df[feats]
     test_x_np = test_x.to_numpy()
     condition = df['SK_ID_CURR'] == selected_ID
@@ -258,6 +258,7 @@ def highlight_instance(df,selected_ID, features_names,lime_threshold, features_i
     lime_threshold = float(dict_threshold[selected_feature])
     # Eliminate top 1% values to remove outliers
     # Calculer les seuils des 1% les plus bas et 1% les plus hauts
+    df = df.apply(lambda x: x.astype(int) if x.dtype == 'bool' else x)  # transformer les bool en 0/1
     limite_basse = df[selected_feature].quantile(0.01)
     limite_haute = df[selected_feature].quantile(0.99)
 
