@@ -15,18 +15,21 @@ from datetime import datetime, timedelta
 from azure.storage.blob import BlobServiceClient, generate_blob_sas, BlobSasPermissions
 import dill 
 import plotly.graph_objs as go
-
+import os
 ##############
 from fct_plot import make_donut
 from fct_process import extraction, extract_bounds
 
 
+from dotenv import load_dotenv
+load_dotenv()  # This loads the variables from '.env' into the environment
 
 ################################
 account_name = "fruitsamurai97depot"
-account_key=''
-with open("azure_container_key.txt", "r") as my_key:
-    account_key= my_key.read()
+account_key=os.getenv('AZURE_KEY')
+#account_key=''
+#with open("azure_container_key.txt", "r") as my_key:
+#    account_key= my_key.read()
 container_name= "assets"
 ################################
 
