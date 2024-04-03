@@ -6,7 +6,7 @@ import altair as alt
 #import plotly.express as px
 import numpy as np
 import matplotlib.pyplot as plt
-
+import os
 
 ##############################
 
@@ -18,6 +18,9 @@ from functions import client_overview
 from functions import load_explainer, load_explanations
 from functions import show_proba, show_explanations, highlight_instance
 
+from dotenv import load_dotenv
+load_dotenv()  # This loads the variables from '.env' into the environment
+account_key=os.getenv('AZURE_TEST_ACCOUNT_KEY')
 
 #######################
 # Page configuration
@@ -31,7 +34,7 @@ st.set_page_config(
 
 
 ################ Load data and model~###########
-df= load_data()
+df= load_data(account_key)
 clf = load_model()
 explainer= load_explainer()  
 list_IDS = df["SK_ID_CURR"].unique().tolist()

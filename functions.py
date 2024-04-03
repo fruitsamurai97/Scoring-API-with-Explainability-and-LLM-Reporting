@@ -26,7 +26,8 @@ load_dotenv()  # This loads the variables from '.env' into the environment
 
 ################################
 account_name = "fruitsamurai97depot"
-account_key=os.getenv('AZURE_KEY')
+account_key=os.getenv('AZURE_TEST_ACCOUNT_KEY')
+
 #account_key=''
 #with open("azure_container_key.txt", "r") as my_key:
 #    account_key= my_key.read()
@@ -44,7 +45,7 @@ container_client = blob_service_client.get_container_client(container_name)
 ################ Load data~###########
 # Utilisez @st.cache pour charger et préparer les données
 @st.cache_data
-def load_data():
+def load_data(account_key):
 
     
     test_df_name = "test_w2_df.csv"
