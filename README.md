@@ -89,6 +89,6 @@ Here's a blank template to get started: To avoid retyping too much info. Do a se
 <!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
 
 
-
+[linkedin-shield]: https://img.shields.io/badge/-LinkedIn-black.svg?style=for-the-badge&logo=linkedin&colorB=555
 [linkedin-url]: https://www.linkedin.com/in/mohammed-bendaou-903617135/
 [product-screenshot]: images/screenshot.png
