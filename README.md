@@ -1,4 +1,3 @@
-<!-- Improved compatibility of back to top link: See: https://github.com/othneildrew/Best-README-Template/pull/73 -->
 <a name="readme-top"></a>
 <!--
 
@@ -10,10 +9,10 @@
     <img src="images/logo.png" alt="Logo" width="80" height="80">
   </a>
 
-<h3 align="center">project_title</h3>
+<h3 align="center">OpenClassroomsProject</h3>
 
   <p align="center">
-    project_description
+    Scoring credit
     <br />
     <a href="https://github.com/fruitsamurai97/OpenClassroomsProject_7"><strong>Explore the docs »</strong></a>
     <br />
@@ -62,9 +61,9 @@ Ensure you have Python 3.11 or higher installed on your machine.
 ### Installation
 1. Clone the repository to your local machine.
 2. Navigate to the project directory and install required dependencies:
-* pip install -r requirements.txt
+*pip install -r requirements.txt
 3. Run the Streamlit application:
-* streamlit run app.py
+*streamlit run app.py
 
 
 
