@@ -29,6 +29,12 @@ jobs:
       
       - name: Install dependencies
         run: pip install -r requirements.txt
+
+
+      - name: Set up environment variables
+        run: |
+          echo "AZURE_ACCOUNT_KEY=${{ secrets.AZURE_TEST_ACCOUNT_KEY }}" >> $GITHUB_ENV
+
         
       # Optional: Add step to run tests here (PyTest, Django test suites, etc.)
 
