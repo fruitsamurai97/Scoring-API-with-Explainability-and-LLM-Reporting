@@ -11,13 +11,10 @@ import matplotlib.pyplot as plt
 ##############################
 
 #############import funcitons
-#from functions import make_donut
-from functions import load_model
-from functions import load_data
 from functions import client_overview
-from functions import load_explainer, load_explanations
+from functions import load_explanations
 from functions import show_proba, show_explanations, highlight_instance
-
+from functions import fetch_ids
 
 #######################
 # Page configuration
@@ -31,11 +28,11 @@ st.set_page_config(
 
 
 ################ Load data and model~###########
-df= load_data()
-clf = load_model()
-explainer= load_explainer()  
-list_IDS = df["SK_ID_CURR"].unique().tolist()
-
+#df= load_data()
+#clf = load_model()
+#explainer= load_explainer()  
+#list_IDS = df["SK_ID_CURR"].unique().tolist()
+list_IDS = fetch_ids()
 #######Initialize states ############
 
 if 'display_flag' not in st.session_state:
@@ -43,7 +40,7 @@ if 'display_flag' not in st.session_state:
 
 if 'last_selected_ID' not in st.session_state:
     st.session_state['last_selected_ID']= list_IDS[0]
-    st.session_state['explanations'] = load_explanations(df, st.session_state['last_selected_ID'], clf, explainer)
+    st.session_state['explanations'] = load_explanations(st.session_state['last_selected_ID'])
 
 
 if 'show_exp_clicked' not in st.session_state:
@@ -62,7 +59,7 @@ with st.sidebar:
     if selected_ID == st.session_state['last_selected_ID']:
         # Désactiver le flag d'affichage
         not st.session_state["display_flag"]
-        st.session_state['explanations'] = load_explanations(df, selected_ID, clf, explainer) 
+        st.session_state['explanations'] = load_explanations(selected_ID) 
     else:
         # Affichage lorsque on change d'ID
         st.session_state["display_flag"] =False
@@ -77,13 +74,13 @@ col1, col2 = st.columns((3,4), gap='medium')
 ###########################################
     
 with col1:
-    client_overview(df, selected_ID)
+    client_overview(selected_ID,list_IDS)
 with col2: 
     st.markdown("#### Probabilities estimation")
     st.markdown("")
     st.markdown("")
     st.markdown("")
-    show_proba(df,selected_ID)
+    show_proba(selected_ID)
     scol1,scol2,scol3=st.columns((1,3,1))
     with scol1:
         st.markdown("")
@@ -98,14 +95,14 @@ with col2:
     if "display_flag" in st.session_state and st.session_state["display_flag"]:
         if 'show_exp_clicked' in st.session_state and st.session_state["show_exp_clicked"]:
             
-            features_names,lime_threshold, features_impact, exp_list = load_explanations(df,selected_ID,clf,explainer)
+            features_names,lime_threshold, features_impact, exp_list = load_explanations(selected_ID)
             with col1:
                 st.markdown("#### Display a feature")  
                 selected_feature= st.selectbox('Choose a feature to display', features_names) 
-                highlight_instance(df,selected_ID,features_names,lime_threshold, features_impact, exp_list,selected_feature)
+                highlight_instance(selected_ID,selected_feature)
         
             with col2:
                 st.markdown("")
                 st.markdown("")
-                show_explanations(features_names ,features_impact)
+                show_explanations(selected_ID)
                 

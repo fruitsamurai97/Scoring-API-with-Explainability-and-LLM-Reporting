@@ -10,103 +10,63 @@ import seaborn as sns
 import lime 
 import lime.lime_tabular
 from joblib import load
-import io
-from datetime import datetime, timedelta
-from azure.storage.blob import BlobServiceClient, generate_blob_sas, BlobSasPermissions
 import dill 
 import plotly.graph_objs as go
 
 ##############
 from fct_plot import make_donut
 from fct_process import extraction, extract_bounds
+import requests
 
 
-
-################################
-account_name = "fruitsamurai97depot"
-account_key=''
-with open("azure_container_key.txt", "r") as my_key:
-    account_key= my_key.read()
-container_name= "assets"
-################################
-
-connect_str = 'DefaultEndpointsProtocol=https;AccountName=' + account_name + ';AccountKey=' + account_key + ';EndpointSuffix=core.windows.net'
-blob_service_client = BlobServiceClient.from_connection_string(connect_str)
-
-#use the client to connect to the container
-container_client = blob_service_client.get_container_client(container_name)
-
-
-
-################ Load data~###########
-# Utilisez @st.cache pour charger et préparer les données
-@st.cache_data
-def load_data():
-
-    
-    test_df_name = "test_w2_df.csv"
-    #### load test data set ############
-    sas_test = generate_blob_sas(account_name = account_name,
-                                container_name = container_name,
-                                blob_name = test_df_name,
-                                account_key=account_key,
-                                permission=BlobSasPermissions(read=True),
-                                expiry=datetime.utcnow() + timedelta(hours=1))
-
-    sas_test_url = 'https://' + account_name+'.blob.core.windows.net/' + container_name + '/' + test_df_name + '?' + sas_test
-    df= pd.read_csv(sas_test_url)
-    return df
-
-@st.cache_resource
-def load_model():
-    model_blob_name = "Lgb_w2.joblib" 
-    blob_client = blob_service_client.get_blob_client(container=container_name, blob=model_blob_name)
-    stream = io.BytesIO()
-    blob_client.download_blob().download_to_stream(stream)
-    stream.seek(0)  # Go back to the start of the stream
-    clf = load(stream)
-    #clf = load('modele_base.joblib')
-    return clf
-
-
-################## Load LIME explainer ############################
-@st.cache_resource
-def load_explainer(): 
-    explainer_blob_name = 'lime_explainer_w2.pkl'
-    blob_client = blob_service_client.get_blob_client(container=container_name, blob=explainer_blob_name)
-    stream = io.BytesIO()
-    blob_client.download_blob().download_to_stream(stream)
-    stream.seek(0)  # Réinitialise le pointeur au début du stream pour la lecture
-    explainer = dill.load(stream)  # Chargez directement à partir du stream
-    return explainer
 
 #########################################################################
-
-
+@st.cache_data
+def fetch_ids():
+    """Fonction pour récupérer la liste des IDs depuis l'API Flask."""
+    API_URL = "https://oc-api-score.azurewebsites.net/client"
+    response = requests.get(API_URL)
+    if response.status_code == 200:
+        ids = response.json()  # La réponse est attendue sous forme de JSON
+        return ids
+    else:
+        st.error('Failed to retrieve IDs')
+        return []
+    
+@st.cache_data
+def fetch_info(selected_ID):
+    API_URL = f"https://oc-api-score.azurewebsites.net/info?id={selected_ID}"
+    response = requests.get(API_URL)
+    if response.status_code == 200:
+        info=response.json()
+        return info
+    else:
+        st.error("failed to retrieve client info")
+        return []
 
     ################## Create client overview ###############################
-def client_overview(df,selected_ID):         
+def client_overview(selected_ID,list_IDS):     
     dict_sel= {"CODE_GENDER":"Aucun", "AMT_INCOME_TOTAL":0, "AMT_CREDIT":0, "AMT_ANNUITY":0, "AMT_GOODS_PRICE":0, "DAYS_BIRTH":0}
     col_sel=["CODE_GENDER", "AMT_INCOME_TOTAL", "AMT_CREDIT", "AMT_ANNUITY", "AMT_GOODS_PRICE", "DAYS_BIRTH"]
     col_names= ["Sexe", "Annual Income", "Credit Amount", "Annuities", "Goods Price", "Age"]
-    client= df[df["SK_ID_CURR"]== selected_ID]
-    client_att = client[col_sel].iloc[0] # Sélectionner les attributs
+    #client= df[df["SK_ID_CURR"]== selected_ID]
+    client_att = fetch_info(selected_ID)#client[col_sel].iloc[0] # Sélectionner les attributs
 
-    if client_att[0] ==0:
+    if client_att["CODE_GENDER"] ==0:
         dict_sel["CODE_GENDER"] = "Femme"
     else:
         dict_sel["CODE_GENDER"] = "Homme"
 
-    if client_att[1] > 0:
-        dict_sel["AMT_INCOME_TOTAL"] = round(client_att[1])
-    if client_att[2] > 0:
-        dict_sel["AMT_CREDIT"] = round(client_att[2])
-    if client_att[3] > 0:
-        dict_sel["AMT_ANNUITY"] = round(client_att[3])
-    if client_att[4] > 0:
-        dict_sel["AMT_GOODS_PRICE"] = round(client_att[4])
-    if client_att[5]<0:
-        dict_sel["DAYS_BIRTH"] = round(-client_att[5]/365)
+    if client_att["AMT_INCOME_TOTAL"] > 0:
+        dict_sel["AMT_INCOME_TOTAL"] = round(client_att["AMT_INCOME_TOTAL"])
+    if client_att["AMT_CREDIT"] > 0:
+        dict_sel["AMT_CREDIT"] = round(client_att["AMT_CREDIT"])
+    if client_att["AMT_ANNUITY"] > 0:
+        dict_sel["AMT_ANNUITY"] = round(client_att["AMT_ANNUITY"])
+    if client_att["AMT_GOODS_PRICE"] > 0:
+        dict_sel["AMT_GOODS_PRICE"] = round(client_att["AMT_GOODS_PRICE"])
+    if client_att["DAYS_BIRTH"]<0:
+        dict_sel["DAYS_BIRTH"] = round(-client_att["DAYS_BIRTH"]/365)
     
     # Création des inputs
     st.write("### Input Data")
@@ -143,28 +103,38 @@ def client_overview(df,selected_ID):
     col2.metric(label="Annuity/Income %", value=f"{annuity_income_percent:,.0f}%")
     col3.metric(label="Credit Term", value=f"{credit_term:,.0f} Years")
             
+#########################################################################
+@st.cache_data
+def request_proba(selected_ID):
+    API_URL = f"https://oc-api-score.azurewebsites.net/predict?id={selected_ID}"  # Assurez-vous que l'URL correspond à votre configuration
+    response = requests.get(API_URL)
+    if response.status_code == 200:
+        proba = response.json()
+        return proba
+    else:
+        st.error('Failed to retrieve proba')
+        return []
+
+
+
 
 
     ###### Afficher les probabilités de défault ############
-def show_proba(df,selected_ID):
+def show_proba(selected_ID):
     #######################
     # Initialisation des données de probabilité pour le premier élément de la liste
-    list_IDS = df["SK_ID_CURR"].unique().tolist()
-    default_id = list_IDS[0]
-    condition = df['SK_ID_CURR'] == default_id
-    elt = df[condition]["PAYBACK_PROBA"].tolist()[0]
-    if elt:  # Assurez-vous que la liste n'est pas vide pour le premier ID
-        default_proba_remboursement = round(elt*100)
-        default_proba_default = round((1 - elt)*100)
-    else:  # Valeurs par défaut si la liste est vide
-        default_proba_remboursement = 0
-        default_proba_default = 100
+    #list_IDS = df["SK_ID_CURR"].unique().tolist()
+    #default_id = list_IDS[0]
+    #condition = df['SK_ID_CURR'] == default_id
+    #elt = df[condition]["PAYBACK_PROBA"].tolist()[0]
+    #elt = list( request_proba(default_id).values())[1]
+    
   # Dashboard Main Panel
     col1, col2= st.columns((1, 1), gap='medium')
 
     #st.markdown('#### Probabilité de remboursement')
-    condition = df['SK_ID_CURR'] == selected_ID
-    elt = df[condition]["PAYBACK_PROBA"].tolist()[0]
+    #condition = df['SK_ID_CURR'] == selected_ID
+    elt = list( request_proba(selected_ID).values())[0]
     if elt:  # Assurez-vous que la liste n'est pas vide
         proba_remboursement = round(elt*100)
         proba_default = round((1-elt)*100)
@@ -177,7 +147,11 @@ def show_proba(df,selected_ID):
     donut_chart_less = make_donut(proba_default, 'Défaut', 'red')
 
 ## variable pour afficher le statut du crédit
-    credit_status = df[condition]["IF_0_CREDIT_IS_OKAY"].tolist()
+    #credit_status = df[condition]["IF_0_CREDIT_IS_OKAY"].tolist()
+    if elt>0.51:
+        credit_status = 0
+    else:
+        credit_status = 1
     # Affichage des résultats dans Streamlit
     with col1:
         st.markdown('###### Proba remboursement')
@@ -191,27 +165,38 @@ def show_proba(df,selected_ID):
     with col1:
         st.write("")
     with col2:
-        if credit_status and credit_status[0] == 0:
+        if credit_status  == 0:
             st.markdown("<h3 style='color:green; font-size:24px;'>Crédit accordé</h3>", unsafe_allow_html=True)
         else:
             st.markdown("<h3 style='color:red; font-size:24px;'>Crédit non accordé</h3>", unsafe_allow_html=True)
+
+
+
+
+@st.cache_data
+def get_explications(selected_ID):
+    API_URL = f"https://oc-api-score.azurewebsites.net/explain?id={selected_ID}"
+    response = requests.get(API_URL)
+    if response.status_code == 200:
+        explanations=response.json()
+        return explanations
+    else:
+        st.error("failed to retrieve explanations info")
+        return []
+
+
+
+
 @st.cache_data#(allow_output_mutation=True, show_spinner=False)     
-def load_explanations(df,selected_ID,_clf,_explainer):
-    feats = [f for f in df.columns if f not in ['TARGET','SK_ID_CURR','SK_ID_BUREAU','SK_ID_PREV','index',"IF_0_CREDIT_IS_OKAY","PAYBACK_PROBA",'CODE_GENDER']]
-    test_x = df[feats]
-    test_x_np = test_x.to_numpy()
-    condition = df['SK_ID_CURR'] == selected_ID
-    client_instance = test_x_np[df[condition].index[0]]  
-    exp= _explainer.explain_instance(
-        data_row=client_instance, 
-        predict_fn=_clf.predict_proba, 
-        num_features=5
-    )
-    features_names,lime_threshold, features_impact, exp_list = extraction(exp.as_list())
+def load_explanations(selected_ID):
+    
+    exp_list= get_explications(selected_ID)
+    features_names,lime_threshold, features_impact, exp_list = extraction(exp_list)
     return features_names, lime_threshold, features_impact, exp_list 
 ######################## Voir les explications ################
-def show_explanations(features_names ,features_impact):
-        
+def show_explanations(selected_ID):
+    features_names, lime_threshold, features_impact, exp_list= load_explanations(selected_ID)
+    del lime_threshold,exp_list  
     dict_lime = dict(zip(features_names, features_impact))
     colors_original_order = ['darkgreen' if x < 0 else 'darkred' for x in dict_lime.values()]
     df_lime= pd.DataFrame(dict_lime.items(),columns=["Feature","Value"])
@@ -243,11 +228,24 @@ def show_explanations(features_names ,features_impact):
     }
     graph = st.plotly_chart(fig, use_container_width=True, config=config)
 
-    
-    
+@st.cache_data  
+def feature_dist(selected_feature):
+    API_URL = f"https://oc-api-score.azurewebsites.net/feature?feature={selected_feature}"
+    response = requests.get(API_URL)
+    if response.status_code == 200:
+        feature=response.json()
+        return feature
+    else:
+        st.error("failed to retrieve feature info")
+        return []
    
-def highlight_instance(df,selected_ID, features_names,lime_threshold, features_impact, exp_list,selected_feature):
-
+def highlight_instance(selected_ID,selected_feature):
+    features_names, lime_threshold, features_impact, exp_list=load_explanations(selected_ID)
+    df=pd.DataFrame()
+    df["SK_ID_CURR"]= fetch_ids()
+    for feature in features_names:
+        df[feature]= feature_dist(feature)
+    
     condition = df['SK_ID_CURR'] == selected_ID
     features_values = df[condition][features_names].iloc[0].tolist() ## Récupérer les valeur de ces 5 features pour ce client
     dict_lime = dict(zip(features_names, features_values)) # Mettre ces valeurs dans un dictionnaire
@@ -256,6 +254,7 @@ def highlight_instance(df,selected_ID, features_names,lime_threshold, features_i
     feature_value = dict_lime[selected_feature] # Stocker la valeur de ce feature pour ce client
     feature_impact = dict_impact[selected_feature] #Stocker l'impact de ce feature pour la décision de crédit
     lime_threshold = float(dict_threshold[selected_feature])
+    
     # Eliminate top 1% values to remove outliers
     # Calculer les seuils des 1% les plus bas et 1% les plus hauts
     df = df.apply(lambda x: x.astype(int) if x.dtype == 'bool' else x)  # transformer les bool en 0/1
@@ -311,9 +310,3 @@ def highlight_instance(df,selected_ID, features_names,lime_threshold, features_i
 
     
 
-        
-def test_affichage(df,selected_ID):
-    condition = df['SK_ID_CURR'] == selected_ID
-
-    st.write(df[condition])
-    
