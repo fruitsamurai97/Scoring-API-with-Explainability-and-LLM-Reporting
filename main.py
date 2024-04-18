@@ -27,20 +27,18 @@ st.set_page_config(
 
 
 
-################ Load data and model~###########
-#df= load_data()
-#clf = load_model()
-#explainer= load_explainer()  
-#list_IDS = df["SK_ID_CURR"].unique().tolist()
-list_IDS = fetch_ids()
+
 #######Initialize states ############
 
 if 'display_flag' not in st.session_state:
     st.session_state["display_flag"] = True
 
+if 'list_IDS' not in st.session_state:
+    st.session_state['list_IDS'] = fetch_ids()
+
 if 'last_selected_ID' not in st.session_state:
-    st.session_state['last_selected_ID']= list_IDS[0]
-    st.session_state['explanations'] = load_explanations(st.session_state['last_selected_ID'])
+    st.session_state['last_selected_ID'] = st.session_state['list_IDS'][0]
+    #st.session_state['explanations'] = load_explanations(st.session_state['last_selected_ID'])
 
 
 if 'show_exp_clicked' not in st.session_state:
@@ -48,24 +46,20 @@ if 'show_exp_clicked' not in st.session_state:
 
 
 ####################################################
-    
+st.write("IDs in session_state:", st.session_state['last_selected_ID'])
+   
 #Sidebar creation
 with st.sidebar:
     st.title('Options')  
-    #selected_model = st.selectbox("Select model",list_models)  
+    #selected_ID = st.sidebar.selectbox("Select client ID", st.session_state['list_IDS'])
+    selected_ID = st.sidebar.selectbox("Select client ID", st.session_state['list_IDS']
+                , index=st.session_state['list_IDS'].index(st.session_state['last_selected_ID']))
 
-    selected_ID = st.selectbox("Select client ID", list_IDS)
     # Vérification si l'ID sélectionné a été re-sélectionné
-    if selected_ID == st.session_state['last_selected_ID']:
-        # Désactiver le flag d'affichage
-        not st.session_state["display_flag"]
-        st.session_state['explanations'] = load_explanations(selected_ID) 
-    else:
-        # Affichage lorsque on change d'ID
+    if selected_ID != st.session_state['last_selected_ID']:
         st.session_state["display_flag"] =False
         st.session_state['last_selected_ID'] = selected_ID
-
-#if st.session_state['last_selected_ID'] == selected_ID:
+     
 
 
         
@@ -74,7 +68,7 @@ col1, col2 = st.columns((3,4), gap='medium')
 ###########################################
     
 with col1:
-    client_overview(selected_ID,list_IDS)
+    client_overview(selected_ID)
 with col2: 
     st.markdown("#### Probabilities estimation")
     st.markdown("")

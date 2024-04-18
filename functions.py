@@ -45,7 +45,7 @@ def fetch_info(selected_ID):
         return []
 
     ################## Create client overview ###############################
-def client_overview(selected_ID,list_IDS):     
+def client_overview(selected_ID):     
     dict_sel= {"CODE_GENDER":"Aucun", "AMT_INCOME_TOTAL":0, "AMT_CREDIT":0, "AMT_ANNUITY":0, "AMT_GOODS_PRICE":0, "DAYS_BIRTH":0}
     col_sel=["CODE_GENDER", "AMT_INCOME_TOTAL", "AMT_CREDIT", "AMT_ANNUITY", "AMT_GOODS_PRICE", "DAYS_BIRTH"]
     col_names= ["Sexe", "Annual Income", "Credit Amount", "Annuities", "Goods Price", "Age"]
@@ -310,3 +310,37 @@ def highlight_instance(selected_ID,selected_feature):
 
     
 
+def features_client(selected_ID,selected_feature):
+    
+         
+
+    df=pd.DataFrame()
+    df["SK_ID_CURR"]= fetch_ids()
+
+    df[selected_feature]= feature_dist(selected_feature)
+    
+    condition = df['SK_ID_CURR'] == selected_ID
+    feature_value= df[condition][selected_feature].iloc[0]
+
+    # Eliminate top 1% values to remove outliers
+    # Calculer les seuils des 1% les plus bas et 1% les plus hauts
+    df = df.apply(lambda x: x.astype(int) if x.dtype == 'bool' else x)  # transformer les bool en 0/1
+    limite_basse = df[selected_feature].quantile(0.01)
+    limite_haute = df[selected_feature].quantile(0.99)
+
+
+    #threshold = np.percentile(df[selected_feature], 99.99)  # Find the 95th percentile value
+    filtered_df = df[(df[selected_feature] >= limite_basse) & (df[selected_feature] <= limite_haute)] #df[df[selected_feature] <= threshold]  # Keep only the data <= 99th percentile to avoid extreme values
+    
+    # Define the figure size
+    plt.figure(figsize=(10, 6))
+    
+    # Plot the distribution of the feature for the dataset with outliers removed
+    sns.histplot(filtered_df[selected_feature], kde=True, color = 'darkblue', 
+                edgecolor='black', linewidth=1)
+    plt.axvline(feature_value, color="blue", linestyle='-', linewidth=2)
+    
+    plt.title(f'Distribution of {selected_feature} with highlighted instances (ID: {selected_ID})')
+    plt.xlabel(selected_feature)
+    plt.ylabel('Density')
+    st.pyplot(plt)
