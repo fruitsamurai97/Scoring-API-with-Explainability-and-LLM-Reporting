@@ -344,3 +344,31 @@ def features_client(selected_ID,selected_feature):
     plt.xlabel(selected_feature)
     plt.ylabel('Density')
     st.pyplot(plt)
+
+
+    
+##########################################
+import openai
+openai.api_key = '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'
+@st.cache_resource
+def create_prompt(selected_ID):
+    features_names, lime_threshold, features_impact, exp_list=load_explanations(selected_ID)
+ 
+    features= exp_list
+    prompt = "Generate a report explaining the impact of the following features on the model's prediction: "
+    prompt += ", ".join([f"{feature}: {impact:.2f}" for feature, impact in features])
+
+    response = openai.ChatCompletion.create(
+        model="gpt-3.5-turbo",  
+        messages=[
+            {"role": "system", "content": "You are a helpful assistant."},
+            {"role": "user", "content": prompt}
+        ]
+    )
+
+    # Correctly accessing the response content
+    generated_text = response.choices[0].message['content']
+    st.write("## Report")
+    st.write(generated_text)
+
+

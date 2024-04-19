@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 from functions import client_overview
 from functions import load_explanations
 from functions import show_proba, show_explanations, highlight_instance
-from functions import fetch_ids
+from functions import fetch_ids, create_prompt
 
 #######################
 # Page configuration
@@ -46,7 +46,6 @@ if 'show_exp_clicked' not in st.session_state:
 
 
 ####################################################
-st.write("IDs in session_state:", st.session_state['last_selected_ID'])
    
 #Sidebar creation
 with st.sidebar:
@@ -99,4 +98,4 @@ with col2:
                 st.markdown("")
                 st.markdown("")
                 show_explanations(selected_ID)
-                
+            create_prompt(selected_ID)
