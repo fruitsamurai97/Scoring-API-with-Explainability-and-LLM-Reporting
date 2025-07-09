@@ -5,20 +5,20 @@
 <!-- PROJECT LOGO -->
 <br />
 <div align="center">
-  <a href="https://github.com/fruitsamurai97/OpenClassroomsProject_7">
+  <a href="https://github.com/fruitsamurai97/Scoring-API-with-Explainability-and-LLM-Reporting">
     <img src="images/logo.png" alt="Logo" width="80" height="80">
   </a>
 
-<h3 align="center">OpenClassroomsProject</h3>
+<h3 align="center">Scoring Project</h3>
 
   <p align="center">
     Scoring credit
     <br />
-    <a href="https://github.com/fruitsamurai97/OpenClassroomsProject_7"><strong>Explore the docs »</strong></a>
+    <a href="https://github.com/fruitsamurai97/Scoring-API-with-Explainability-and-LLM-Reporting"><strong>Explore the docs »</strong></a>
     <br />
     <br />
     .
-    <a href="https://openclassrooms-scoring.azurewebsites.net/">View Demo</a>
+    <a href="https://fruit-scoring.azurewebsites.net/">View Demo</a>
     .
   </p>
 </div>
@@ -29,7 +29,7 @@
 <!-- ABOUT THE PROJECT -->
 ## About The Project
 
-[![Product Name Screen Shot][product-screenshot]](https://openclassrooms-scoring.azurewebsites.net/)
+[![Product Name Screen Shot][product-screenshot]](https://fruit-scoring.azurewebsites.net/)
 
 # Credit Decision Analysis Project
 

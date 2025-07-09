@@ -17,6 +17,13 @@ import plotly.graph_objs as go
 from fct_plot import make_donut
 from fct_process import extraction, extract_bounds
 import requests
+import os
+from dotenv import load_dotenv
+import openai
+
+# Load environment variables from .env file
+load_dotenv()
+openai.api_key = os.getenv("OPENAI_API_KEY")
 
 
 
@@ -348,8 +355,7 @@ def features_client(selected_ID,selected_feature):
 
     
 ##########################################
-import openai
-openai.api_key = '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'
+
 @st.cache_resource
 def create_prompt(selected_ID):
     features_names, lime_threshold, features_impact, exp_list=load_explanations(selected_ID)

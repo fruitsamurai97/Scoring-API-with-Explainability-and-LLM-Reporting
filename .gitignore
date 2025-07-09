@@ -1,0 +1,14 @@
+# Environment variables
+.env
+
+# Azure keys
+azure_container_key.txt
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
